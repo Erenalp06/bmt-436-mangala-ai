@@ -48,20 +48,34 @@ class Mangala:
                 self.board[current_index] += 1
                 stones -= 1
 
-
+        ### 2.KURAL ###
         # Eğer son taş, rakibin kuyusundaki taş sayısını çift yapıyorsa, taşları al ve hazineye koy
         if current_index != 6 and current_index != 13 and stones == 0:
+
+
+            if player == 1 & current_index > 6 & current_index < 13:
+                if self.board[current_index] % 2 == 0:
+                    self.board[6] += self.board[current_index]
+                    self.board[current_index] = 0
+            elif player == -1 & current_index > 0 & current_index < 6:
+                if self.board[current_index] % 2 == 0:
+                    self.board[13] += self.board[current_index]
+                    self.board[current_index] = 0
+
+        ### 3.KURAL ###
+        # Eğer son taş, boş bir kuyuya atılır ve karşısındaki rakip bölgede taş varsa, hem rakibin taşları hem de atılan taş alınır.
+        if current_index != 6 and current_index != 13 and stones == 0 and self.board[current_index] == 1:
             opposite_pit_index = 12 - current_index
-            if player == 1 and self.board[current_index] % 2 == 0 and self.board[opposite_pit_index] > 0:
-                self.board[6] += self.board[current_index] + self.board[opposite_pit_index]
-                self.board[current_index] = 0
-                self.board[opposite_pit_index] = 0
-            elif player == -1 and self.board[current_index] % 2 == 0 and self.board[opposite_pit_index] > 0:
-                self.board[13] += self.board[current_index] + self.board[opposite_pit_index]
-                self.board[current_index] = 0
-                self.board[opposite_pit_index] = 0
+            if self.board[opposite_pit_index] > 0:
+                self.captures_stones(current_index, opposite_pit_index, player)
 
-
+    def captures_stones(self, current_index, opposite_pit_index, player):
+        if player == 1:
+            self.board[6] += self.board[current_index] + self.board[opposite_pit_index]
+        elif player == -1:
+            self.board[13] += self.board[current_index] + self.board[opposite_pit_index]
+        self.board[current_index] = 0
+        self.board[opposite_pit_index] = 0
 
     def evaluate_board(self):
         return self.board[6] - self.board[13]  # Player 1'in taş sayısı - Player 2'nin taş sayısı
@@ -130,8 +144,8 @@ def main():
 
     while not game_over:
         # Oyuncu 1'in hamlesi
-        player1_move = find_best_move(game_board, depth=3)
-        game_board.make_move(player1_move, 1)
+        player1_move = int(input("Oyuncu 1, taş seçin (7-12): "))
+        game_board.make_move(player1_move, -1)
         print(f"Oyuncu 1 hamlesi: {player1_move}")
         game_board.display_board()
 
@@ -140,8 +154,8 @@ def main():
             break
 
         # Oyuncu 2'nin hamlesi
-        player2_move = int(input("Oyuncu 2, taş seçin (7-12): "))
-        game_board.make_move(player2_move, -1)
+        player2_move = find_best_move(game_board, depth=3)
+        game_board.make_move(player2_move, 1)
         print(f"Oyuncu 2 hamlesi: {player2_move}")
         game_board.display_board()
 
