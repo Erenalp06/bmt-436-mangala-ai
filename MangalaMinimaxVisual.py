@@ -1,3 +1,6 @@
+from textwrap import indent
+
+
 class Mangala:
     def __init__(self, board=None):
         if board is None:
@@ -81,37 +84,47 @@ class Mangala:
     def evaluate_board(self):
         return self.board[6] - self.board[13]  # Player 1'in taş sayısı - Player 2'nin taş sayısı
 
-
+def print_minimax_steps(board, depth, player, alpha, beta, move):
+    indent = ' ' * (5 - depth)  # Derinlik kadar boşluk ekleyerek görselleştirme yapar
+    print(f"{indent}Depth {depth}, Player {player}, Move {move}")
+    print(f"{indent}Alpha: {alpha}, Beta: {beta}")
+    board.display_board()
+    print()
 
 
 def minimax(board, depth, player, alpha, beta):
     if depth == 0 or board.is_game_over():
-        return board.evaluate_board()
+        eval_value = board.evaluate_board()
+        print_minimax_steps(board, depth, player, alpha, beta, None)
+        print(f"{indent}Evaluated: {eval_value}")
+        return eval_value
 
     valid_moves = board.get_valid_moves(player)
 
     if player == 1:  # Maximize
         max_eval = float('-inf')
         for move in valid_moves:
-            new_board = Mangala(list(board.board))  # Derin kopya oluştur
+            new_board = Mangala(list(board.board))
             new_board.make_move(move, player)
             eval = minimax(new_board, depth - 1, -player, alpha, beta)
             max_eval = max(max_eval, eval)
             alpha = max(alpha, eval)
             if beta <= alpha:
                 break
+            print_minimax_steps(board, depth, player, alpha, beta, move)
         return max_eval
 
     else:  # Minimize
         min_eval = float('inf')
         for move in valid_moves:
-            new_board = Mangala(list(board.board))  # Derin kopya oluştur
+            new_board = Mangala(list(board.board))
             new_board.make_move(move, player)
             eval = minimax(new_board, depth - 1, -player, alpha, beta)
             min_eval = min(min_eval, eval)
             beta = min(beta, eval)
             if beta <= alpha:
                 break
+            print_minimax_steps(board, depth, player, alpha, beta, move)
         return min_eval
 
 
@@ -161,7 +174,7 @@ def main():
             break
 
         # Oyuncu 2'nin hamlesi
-        player2_move = find_best_move(game_board, depth=5)
+        player2_move = find_best_move(game_board, depth=2)
         game_board.make_move(player2_move, 1)
         print(f"Oyuncu 2 hamlesi: {player2_move}")
         game_board.display_board()
