@@ -1,8 +1,43 @@
+from random import random
+
 import pygame
-import logging
+from pygame.locals import *
+import random
+
+pygame.init()
+pygame.display.set_icon(pygame.image.load("images/game_icon.png"))
+
+click_sound = pygame.mixer.Sound("images/click.wav")
+click_sound.set_volume(0.2)
+capture_sound = pygame.mixer.Sound("images/capture.wav")
+capture_sound.set_volume(0.2)
+win_sound = pygame.mixer.Sound("images/win.wav")
+win_sound.set_volume(0.2)
+
+black = (0, 0, 0)
+white = (255, 255, 255)
+red = (255, 0, 0)
+green = (0, 255, 0)
+blue = (0, 0, 255)
+yellow = (255, 255, 0)
+brown = (139, 69, 19)
+
+hole_radius = 50
+hole_margin = 10
+hole_number = 6
+stone_number = 4
+stone_radius = 10
+treasure_width = 100
+treasure_height = 200
+treasure_margin = 50
+font_size = 32
+animation_speed = 0.1
+difficulty = 3
+
+clock = pygame.time.Clock()
 
 
-class Mangala:
+class MangalaV2:
     def __init__(self, board=None):
         # Mangala oyun tahtasını başlangıç durumu ile başlat veya belirtilen tahta ile başlat.
         if board is None:
@@ -62,7 +97,7 @@ class Mangala:
                 self.board[current_index] += 1
                 stones -= 1
 
-        ### 2.KURAL ###
+        # ## 2.KURAL ###
         # Eğer son taş, rakibin kuyusundaki taş sayısını çift yapıyorsa, taşları al ve hazineye koy
         if current_index != 6 and current_index != 13 and stones == 0:
             if player == 1 and 6 < current_index < 13:
@@ -74,12 +109,14 @@ class Mangala:
                     self.board[13] += self.board[current_index]
                     self.board[current_index] = 0
 
-        ### 3.KURAL ###
-        # Eğer son taş, boş bir kuyuya atılır ve karşısındaki rakip bölgede taş varsa, hem rakibin taşları hem de atılan taş alınır.
+        # ## 3.KURAL ### Eğer son taş, boş bir kuyuya atılır ve karşısındaki rakip bölgede taş varsa, hem rakibin
+        # taşları hem de atılan taş alınır.
         if current_index != 6 and current_index != 13 and stones == 0 and self.board[current_index] == 1:
             opposite_pit_index = 12 - current_index
             if self.board[opposite_pit_index] > 0:
                 self.captures_stones(current_index, opposite_pit_index, player)
+
+        click_sound.play()
 
     def captures_stones(self, current_index, opposite_pit_index, player):
         # Belirtilen indislerden taşları al ve tahtayı güncelle.
@@ -89,6 +126,8 @@ class Mangala:
             self.board[13] += self.board[current_index] + self.board[opposite_pit_index]
         self.board[current_index] = 0
         self.board[opposite_pit_index] = 0
+
+        capture_sound.play()
 
     def evaluate_board(self):
         # Mangala oyun tahtasının mevcut durumunu değerlendir.
@@ -105,7 +144,7 @@ def minimax(board, depth, player, alpha, beta):
     if player == 1:  # Maximize
         max_eval = float('-inf')
         for move in valid_moves:
-            new_board = Mangala(list(board.board))  # Derin kopya oluştur
+            new_board = MangalaV2(list(board.board))  # Derin kopya oluştur
             new_board.make_move(move, player)
             eval = minimax(new_board, depth - 1, -player, alpha, beta)
             max_eval = max(max_eval, eval)
@@ -117,7 +156,7 @@ def minimax(board, depth, player, alpha, beta):
     else:  # Minimize
         min_eval = float('inf')
         for move in valid_moves:
-            new_board = Mangala(list(board.board))  # Derin kopya oluştur
+            new_board = MangalaV2(list(board.board))  # Derin kopya oluştur
             new_board.make_move(move, player)
             eval = minimax(new_board, depth - 1, -player, alpha, beta)
             min_eval = min(min_eval, eval)
@@ -134,7 +173,7 @@ def find_best_move(board, depth):
     max_eval = float('-inf')
 
     for move in valid_moves:
-        new_board = Mangala(list(board.board))
+        new_board = MangalaV2(list(board.board))
         new_board.make_move(move, 1)
         eval = minimax(new_board, depth - 1, -1, float('-inf'), float('inf'))
         if eval > max_eval:
@@ -142,6 +181,7 @@ def find_best_move(board, depth):
             best_move = move
 
     return best_move
+
 
 # Kuyu koordinatlarını bir liste içinde tanımla
 kuyu_positions = [
@@ -163,15 +203,29 @@ def get_clicked_kuyu(mouse_x, mouse_y):
             return i
     return None
 
+
 def draw_player_area(screen, position, n, stone_count):
     font = pygame.font.Font(None, 30)
+
+    # #####
+
+    player_area_rect = pygame.Rect(position[0], position[1], 90, 90)
+
+    # Check if the mouse is over the player area
+    if player_area_rect.collidepoint(pygame.mouse.get_pos()):
+        pygame.draw.rect(screen, (255, 0, 0),
+                         (position[0], position[1], 90, 90))  # Change color or add outline for hover effect
+    else:
+        pygame.draw.rect(screen, (80, 0, 0), (position[0], position[1], 90, 90))
+
+    # #####
 
     # Taş Pozisyonları
     stone_coordinates = [(position[0] + 20 + 25 * i, position[1] - 10 + 25 * j) for i in range(3) for j in range(6)]
 
     pygame.draw.rect(screen, (80, 0, 0), (position[0], position[1], 90, 90))  # Dikdörtgen çizimi
-    pygame.draw.circle(screen, (80, 0, 0), (position[0] + 45, position[1] + 100), 45)  # Alt yuvarlak çizimi
-    pygame.draw.circle(screen, (80, 0, 0), (position[0] + 45, position[1]), 45)  # Üst yuvarlak çizimi
+    pygame.draw.circle(screen, (80, 0, 0), (position[0] + 45, position[1] + 95), 45)  # Alt yuvarlak çizimi
+    pygame.draw.circle(screen, (80, 0, 0), (position[0] + 45, position[1] - 5), 45)  # Üst yuvarlak çizimi
 
     if n > stone_count:
         text = font.render(str(n), True, (255, 255, 255))
@@ -190,8 +244,6 @@ def draw_player_area(screen, position, n, stone_count):
             pygame.draw.circle(screen, (80, 0, 0), stone_coordinates[i], 10)
 
 
-
-
 def draw_board(screen, game_board):
     pygame.draw.rect(screen, (139, 40, 19), (5, 175, 790, 200))
 
@@ -207,22 +259,26 @@ def draw_board(screen, game_board):
 
         # Kuyu indisleri 0'dan 6'ya kadar olanlar için altında, 7'den 12'ye kadar olanlar için üstünde yazdırılıyor.
         if i > 6:
-            text = font.render(str(kuyu_index), True, (255, 255, 255))
+            text = font.render(str(kuyu_index), True, (0, 0, 0))
             text_rect = text.get_rect(center=(kuyu_position[0], kuyu_position[1] + 80))
         else:
-            text = font.render(str(kuyu_index), True, (255, 255, 255))
+            text = font.render(str(kuyu_index), True, (0, 0, 0))
             text_rect = text.get_rect(center=(kuyu_position[0], kuyu_position[1] - 80))
 
         screen.blit(text, text_rect)
 
 
-
-
-
-
 def draw_kuyu(screen, position, n, stone_count):
     font = pygame.font.Font(None, 30)
     pygame.draw.circle(screen, (80, 0, 0), position, 45)
+
+    kuyu_rect = pygame.Rect(position[0] - 45, position[1] - 45, 90, 90)
+
+    # Check if the mouse is over the pit
+    if kuyu_rect.collidepoint(pygame.mouse.get_pos()):
+        pygame.draw.circle(screen, (255, 0, 0), position, 45)  # Change color or add outline for hover effect
+    else:
+        pygame.draw.circle(screen, (80, 0, 0), position, 45)
 
     stone_count_kuyu = 6
     # Adjust the calculations for stone positions
@@ -240,18 +296,37 @@ def draw_kuyu(screen, position, n, stone_count):
 
         for i in range(change_color_count_kuyu, stone_count_kuyu):
             pygame.draw.circle(screen, (80, 0, 0), stone_positions[i], 10)
+
+def display_transparent_text(text, font_size, position, screen):
+    font = pygame.font.Font(None, font_size)
+    text_surface = font.render(text, True, (255, 255, 255))
+    text_rect = text_surface.get_rect(midbottom=position)
+    text_surface.set_alpha(128)  # Set alpha value for transparency (0: fully transparent, 255: fully opaque)
+    screen.blit(text_surface, text_rect)
+
 def main():
-    pygame.init()
+    # Timer variables
+    timer_duration = 5000  # 20 seconds in milliseconds
+    current_timer = timer_duration
+    timer_running = False
+
+    # Font setup for timer display
+    timer_font = pygame.font.Font(None, 36)
+    timer_text_color = (0, 0, 0)
 
     screen_width = 800
     screen_height = 600
 
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("Mangala Oyunu")
+    background = pygame.image.load("images/background.jpg")
+    pygame.mixer.music.load("images/music.mp3")
+    pygame.mixer.music.play(-1)
+    pygame.mixer.music.set_volume(0.2)
 
     font = pygame.font.Font(None, 90)
 
-    game_board = Mangala()
+    game_board = MangalaV2()
     game_over = False
     current_player = -1
 
@@ -259,7 +334,27 @@ def main():
     print("Başlangıç Durumu:")
     game_board.display_board()
 
+    dragging = False
+    drag_start_x = 0
+    volume = 0.2
+    muted = False
+    sound_on_icon = pygame.image.load("images/sound_on.png")
+    sound_off_icon = pygame.image.load("images/sound_off.png")
+
+    icon_size = (35, 35)
+
+    sound_on_icon = pygame.transform.scale(sound_on_icon, icon_size)
+    sound_off_icon = pygame.transform.scale(sound_off_icon, icon_size)
+
+    timer_running = True
+    current_timer = timer_duration
+
+    clock = pygame.time.Clock()
     while not game_over:
+        elapsed_time = clock.tick(60)
+        screen.fill(black)
+        screen.blit(background, (0, 0))
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_over = True
@@ -272,31 +367,122 @@ def main():
                         valid_moves = game_board.get_valid_moves(player=-1)
                         if clicked_kuyu in valid_moves:
                             game_board.make_move(clicked_kuyu, player=-1)
+
                             current_player = 1
                             print("Oyuncu 1'in Hamlesi: %d" % clicked_kuyu)
                             print("Oyun Tahtası:\n%s" % str(game_board.display_board()))
                             if game_board.is_game_over():
                                 game_over = True
                                 print("Oyun Bitti! Oyuncu 1 Kazandı!")
+                                win_sound.play()
                             else:
                                 print("PC Sırası")
                             # Oyuncu 1'in hamlesi sonrasında bilgisayarın hamlesi yapılıyor
                             player2_move = find_best_move(game_board, depth=5)
                             game_board.make_move(player2_move, player=1)
+
                             current_player = -1
                             print("Oyuncu 2'nin Hamlesi: %d" % player2_move)
                             print("Oyun Tahtası:\n%s" % str(game_board.display_board()))
                             if game_board.is_game_over():
                                 game_over = True
                                 print("Oyun Bitti! PC Kazandı!")
+                                win_sound.play()
                             else:
                                 print("Oyuncu 1 Sırası")
+                            current_timer = timer_duration
+                if 50 <= mouse_x <= 250 and 550 <= mouse_y <= 570:
+                    dragging = True  # Slider'ı tutma başladı
+                    drag_start_x = mouse_x
+                    volume = pygame.mixer.music.get_volume()
+                elif 8 <= mouse_x <= 40 and 540 <= mouse_y <= 570:
+                    # Toggle mute/unmute when clicking on the sound icon
+                    muted = not muted
+                    if muted:
+                        pygame.mixer.music.set_volume(0.0)
+                    else:
+                        pygame.mixer.music.set_volume(volume)
+            elif event.type == KEYDOWN:
+                if event.key == K_UP:
+                    volume = min(1.0, volume + 0.1)
+                    pygame.mixer.music.set_volume(volume)
+                elif event.key == K_DOWN:
+                    volume = max(0.0, volume - 0.1)
+                    pygame.mixer.music.set_volume(volume)
+            elif event.type == pygame.MOUSEMOTION:
+                mouse_x, mouse_y = event.pos
+                if dragging:
+                    # Calculate the new volume based on the slider position
+                    volume = max(0.0, min(1.0, (mouse_x - 50) / 200.0))
+                    pygame.mixer.music.set_volume(volume)
+            elif event.type == pygame.MOUSEBUTTONUP:
+                dragging = False
+
+        # Zamanlayıcıyı güncelle
+        if timer_running:
+            elapsed_time = pygame.time.Clock().tick(60)
+            current_timer -= elapsed_time
+            if current_timer <= 0:
+
+                if current_player == -1:
+                    player_moves = game_board.get_valid_moves(current_player)
+                    if player_moves:
+                        random_move = random.choice(player_moves)
+                        game_board.make_move(random_move, current_player)
+                        print("Oyuncu 1'in Hamlesi: %d" % random_move)
+                        print("Oyun Tahtası:\n%s" % str(game_board.display_board()))
+                    # Sırayı bir sonraki oyuncuya geçir
+                    current_player = 1
+                else:
+                    # Sıra oyuncu 2'nin (PC) hamlesi
+                    current_player = -1
+                    player2_move = find_best_move(game_board, depth=5)
+                    game_board.make_move(player2_move, player=1)
+
+                    print("Oyuncu 2'nin Hamlesi: %d" % player2_move)
+                    print("Oyun Tahtası:\n%s" % str(game_board.display_board()))
+
+                    if game_board.is_game_over():
+                        game_over = True
+                        print("Oyun Bitti! PC Kazandı!")
+                        win_sound.play()
+                    else:
+                        print("Oyuncu 1 Sırası")
+                    # Zamanlayıcıyı mevcut oyuncu için sıfırla
+                    current_timer = timer_duration
+
+        pygame.time.delay(0)  # Zamanlayıcı hızını kontrol etmek için küçük bir gecikme ekle
+
+        # Draw the timer on the screen
+        timer_text = timer_font.render(f"Time left: {current_timer // 1000} seconds", True, timer_text_color)
+        timer_text_rect = timer_text.get_rect(center=(screen_width // 2, 30))
+        screen.blit(timer_text, timer_text_rect)
+
+        # Draw the volume slider
+        pygame.draw.rect(screen, (255, 255, 255), (50, 540, 200, 20), border_radius=10)
+        pygame.draw.rect(screen, (139, 40, 19), (50, 540, int(volume * 200), 20), border_radius=10)
+
+        # Draw the sound icon
+        if muted:
+            # Draw the mute icon using the sound_off_icon image
+            screen.blit(sound_off_icon, (50 - sound_off_icon.get_width() - 10, 532))
+        else:
+            # Draw the unmute icon using the sound_on_icon image
+            screen.blit(sound_on_icon, (50 - sound_on_icon.get_width() - 10, 532))
+
+        # Draw the volume bar
+        # pygame.draw.rect(screen, (0, 0, 255), (50 + int(volume * 200), 535, 10, 30))
 
         draw_board(screen, game_board)
-        pygame.display.update()
+
+        # Display "MANGALA" text on the background
+        display_transparent_text("MANGALA", 100, (screen_width // 2, screen_height - 100), screen)
+
+        pygame.display.flip()
         pygame.time.Clock().tick(60)
 
     pygame.quit()
+
 
 if __name__ == "__main__":
     main()
