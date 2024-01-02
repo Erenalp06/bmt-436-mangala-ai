@@ -202,9 +202,17 @@ def draw_board(screen, game_board):
         if i == 6:
             continue
         draw_kuyu(screen, kuyu_position, game_board.board[kuyu_index], 6)
+
         font = pygame.font.Font(None, 30)
-        text = font.render(str(kuyu_index), True, (255, 255, 255))
-        text_rect = text.get_rect(center=(kuyu_position[0], kuyu_position[1]))
+
+        # Kuyu indisleri 0'dan 6'ya kadar olanlar için altında, 7'den 12'ye kadar olanlar için üstünde yazdırılıyor.
+        if i > 6:
+            text = font.render(str(kuyu_index), True, (255, 255, 255))
+            text_rect = text.get_rect(center=(kuyu_position[0], kuyu_position[1] + 80))
+        else:
+            text = font.render(str(kuyu_index), True, (255, 255, 255))
+            text_rect = text.get_rect(center=(kuyu_position[0], kuyu_position[1] - 80))
+
         screen.blit(text, text_rect)
 
 
