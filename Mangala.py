@@ -1,12 +1,13 @@
 class Mangala:
     def __init__(self, board=None):
+        # Mangala oyun tahtasını başlangıç durumu ile başlat veya belirtilen tahta ile başlat.
         if board is None:
             self.board = [4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4, 0]  # Başlangıç durumu
         else:
             self.board = board
 
     def display_board(self):
-
+        # Mangala oyun tahtasının güncel durumunu ekrana yazdır.
         print("         12    11    10    9     8     7")
         print("+-----+-----+-----+-----+-----+-----+-----+-----+")
         print(f"|     |  {self.board[12]}  |  {self.board[11]}  |  {self.board[10]}  |  {self.board[9]}  |  {self.board[8]}  |  {self.board[7]}  |     |")
@@ -19,15 +20,18 @@ class Mangala:
         print()
 
     def is_game_over(self):
+        # Oyunun bitip bitmediğini kontrol et, her iki oyuncunun da tarafının boş olup olmadığını kontrol et.
         return all(count == 0 for count in self.board[:6]) or all(count == 0 for count in self.board[7:13])
 
     def get_valid_moves(self, player):
+        # Belirtilen oyuncu için geçerli hamleleri al.
         if player == 1:
             return [i for i in range(6) if self.board[i] > 0]
         elif player == -1:
             return [i for i in range(7, 13) if self.board[i] > 0]
 
     def make_move(self, move, player):
+        # Belirtilen oyuncu için Mangala oyun tahtasında bir hamle yap.
         stones = self.board[move]
         if stones == 1:
             self.board[move] = 0
@@ -71,6 +75,7 @@ class Mangala:
                 self.captures_stones(current_index, opposite_pit_index, player)
 
     def captures_stones(self, current_index, opposite_pit_index, player):
+        # Belirtilen indislerden taşları al ve tahtayı güncelle.
         if player == 1:
             self.board[6] += self.board[current_index] + self.board[opposite_pit_index]
         elif player == -1:
@@ -79,12 +84,14 @@ class Mangala:
         self.board[opposite_pit_index] = 0
 
     def evaluate_board(self):
+        # Mangala oyun tahtasının mevcut durumunu değerlendir.
         return self.board[6] - self.board[13]  # Player 1'in taş sayısı - Player 2'nin taş sayısı
 
 
 
 
 def minimax(board, depth, player, alpha, beta):
+    # Minimax algoritmasını uygulayarak bir oyuncu için en iyi hamleyi bul.
     if depth == 0 or board.is_game_over():
         return board.evaluate_board()
 
@@ -116,6 +123,7 @@ def minimax(board, depth, player, alpha, beta):
 
 
 def find_best_move(board, depth):
+    # Belirli bir derinlikte Minimax algoritması kullanarak en iyi hamleyi bul.
     valid_moves = board.get_valid_moves(1)
     best_move = -1
     max_eval = float('-inf')
